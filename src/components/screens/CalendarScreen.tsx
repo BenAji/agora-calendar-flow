@@ -109,7 +109,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Calendar View</h1>
-            <p className="text-muted-foreground">Bloomberg-style event calendar</p>
+            <p className="text-muted-foreground">Analyst Calendar View</p>
           </div>
           
           <div className="flex items-center gap-4">
