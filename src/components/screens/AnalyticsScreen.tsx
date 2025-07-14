@@ -1,443 +1,269 @@
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  AreaChart,
-  Area
-} from 'recharts';
+import { NavigationHeader } from '../common/NavigationHeader';
 import { 
   TrendingUp, 
   Users, 
-  Calendar, 
-  Building2,
+  Calendar,
   CheckCircle,
   XCircle,
   Clock,
+  BarChart3,
+  PieChart,
   Activity
 } from 'lucide-react';
-import { sharedEvents, getConflictSummary } from '@/utils/eventsData';
+import { User, Event, Screen } from '../AgoraCalendar';
 
-export const AnalyticsScreen: React.FC = () => {
-  const { user } = useAuth();
+interface AnalyticsScreenProps {
+  currentUser: User;
+  events: Event[];
+  onNavigate: (screen: Screen) => void;
+  onLogout: () => void;
+  onEventUpdate: (event: Event) => void;
+  onEventCreate: (event: Omit<Event, 'id'>) => void;
+  onEventDelete: (eventId: string) => void;
+}
 
-  // Calculate real data from shared events
-  const totalEvents = sharedEvents.length;
-  const totalRsvps = sharedEvents.reduce((sum, event) => sum + Object.keys(event.rsvps).length, 0);
-  const acceptedRsvps = sharedEvents.reduce((sum, event) => 
-    sum + Object.values(event.rsvps).filter(r => r === 'accepted').length, 0
-  );
-  const declinedRsvps = sharedEvents.reduce((sum, event) => 
-    sum + Object.values(event.rsvps).filter(r => r === 'declined').length, 0
-  );
-  const tentativeRsvps = sharedEvents.reduce((sum, event) => 
-    sum + Object.values(event.rsvps).filter(r => r === 'tentative').length, 0
-  );
+export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
+  currentUser,
+  events,
+  onNavigate,
+  onLogout,
+}) => {
+  
+  const getAnalyticsData = () => {
+    const totalEvents = events.length;
+    const upcomingEvents = events.filter(e => new Date(e.date) >= new Date()).length;
+    const pastEvents = totalEvents - upcomingEvents;
+    
+    const allRSVPs = events.reduce((acc, event) => {
+      const rsvps = Object.values(event.rsvps);
+      return {
+        total: acc.total + rsvps.length,
+        accepted: acc.accepted + rsvps.filter(r => r === 'accepted').length,
+        declined: acc.declined + rsvps.filter(r => r === 'declined').length,
+        tentative: acc.tentative + rsvps.filter(r => r === 'tentative').length,
+      };
+    }, { total: 0, accepted: 0, declined: 0, tentative: 0 });
 
-  // Get conflict summary
-  const conflictSummary = getConflictSummary(sharedEvents);
+    const eventsByType = events.reduce((acc, event) => {
+      acc[event.type] = (acc[event.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  // Calculate RSVP data
-  const rsvpData = [
-    { name: 'Accepted', value: acceptedRsvps, color: '#10b981' },
-    { name: 'Declined', value: declinedRsvps, color: '#ef4444' },
-    { name: 'Tentative', value: tentativeRsvps, color: '#f59e0b' }
-  ];
+    const topCompanies = events.reduce((acc, event) => {
+      acc[event.company] = (acc[event.company] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  const monthlyEvents = [
-    { month: 'Jan', events: 24, rsvps: 156 },
-    { month: 'Feb', events: 28, rsvps: 189 },
-    { month: 'Mar', events: 32, rsvps: 234 },
-    { month: 'Apr', events: 29, rsvps: 201 },
-    { month: 'May', events: 35, rsvps: 267 },
-    { month: 'Jun', events: 31, rsvps: 245 }
-  ];
-
-  const eventTypeData = [
-    { type: 'Earnings', count: 45, percentage: 35 },
-    { type: 'Meetings', count: 38, percentage: 29 },
-    { type: 'Conferences', count: 28, percentage: 22 },
-    { type: 'Roadshows', count: 18, percentage: 14 }
-  ];
-
-  const companyEngagement = [
-    { company: 'Apple Inc.', events: 12, rsvps: 89, engagement: 92 },
-    { company: 'Microsoft Corp.', events: 10, rsvps: 76, engagement: 88 },
-    { company: 'Tesla Inc.', events: 8, rsvps: 54, engagement: 85 },
-    { company: 'Amazon.com Inc.', events: 9, rsvps: 67, engagement: 90 },
-    { company: 'Google LLC', events: 7, rsvps: 52, engagement: 87 }
-  ];
-
-  // Calculate conflict data by month
-  const conflictData = [
-    { month: 'Jul', conflicts: conflictSummary.conflicts.filter(c => c[0].date.startsWith('2025-07')).length, resolved: 0 },
-    { month: 'Aug', conflicts: conflictSummary.conflicts.filter(c => c[0].date.startsWith('2025-08')).length, resolved: 0 }
-  ];
-
-  const getAnalyticsContent = () => {
-    if (!user) return null;
-
-    switch (user.role) {
-      case 'IR Admin':
-        return (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalEvents}</div>
-                  <p className="text-xs text-muted-foreground">
-                    July & August 2025
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total RSVPs</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalRsvps}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Across all events
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Accepted RSVPs</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-success" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{acceptedRsvps}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalRsvps > 0 ? `${Math.round((acceptedRsvps / totalRsvps) * 100)}%` : '0%'} acceptance rate
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Event Conflicts</CardTitle>
-                  <Clock className="h-4 w-4 text-warning" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{conflictSummary.total}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {conflictSummary.hasConflicts ? 'Need attention' : 'No conflicts'}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* RSVP Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>RSVP Breakdown</CardTitle>
-                  <CardDescription>
-                    Distribution of RSVP responses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={rsvpData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {rsvpData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Monthly Trends */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Trends</CardTitle>
-                  <CardDescription>
-                    Events and RSVPs over time
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={monthlyEvents}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Area type="monotone" dataKey="events" stackId="1" stroke="#8884d8" fill="#8884d8" />
-                      <Area type="monotone" dataKey="rsvps" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Event Types and Company Engagement */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Event Types</CardTitle>
-                  <CardDescription>
-                    Distribution by event type
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={eventTypeData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="type" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Company Engagement</CardTitle>
-                  <CardDescription>
-                    Top companies by engagement
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {companyEngagement.map((company, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{company.company}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {company.events} events, {company.rsvps} RSVPs
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{company.engagement}%</p>
-                          <Badge variant="outline" className="text-xs">
-                            Engagement
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
-
-      case 'Analyst Manager':
-      case 'Investment Analyst':
-        return (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Meetings</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalEvents}</div>
-                  <p className="text-xs text-muted-foreground">
-                    July & August 2025
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">RSVP Breakdown</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{acceptedRsvps}/{totalRsvps}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalRsvps > 0 ? `${Math.round((acceptedRsvps / totalRsvps) * 100)}%` : '0%'} responded
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Event Conflicts</CardTitle>
-                  <Clock className="h-4 w-4 text-warning" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{conflictSummary.total}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {conflictSummary.hasConflicts ? 'Need attention' : 'No conflicts'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Companies</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{Array.from(new Set(sharedEvents.map(e => e.company))).length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Unique companies
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal RSVP Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>My RSVP Responses</CardTitle>
-                  <CardDescription>
-                    Your RSVP activity
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Accepted', value: 12, color: '#10b981' },
-                          { name: 'Declined', value: 2, color: '#ef4444' },
-                          { name: 'Tentative', value: 1, color: '#f59e0b' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Accepted', value: 12, color: '#10b981' },
-                          { name: 'Declined', value: 2, color: '#ef4444' },
-                          { name: 'Tentative', value: 1, color: '#f59e0b' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Conflict Resolution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Conflict Resolution</CardTitle>
-                  <CardDescription>
-                    Monthly scheduling conflicts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={conflictData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="conflicts" stroke="#ef4444" strokeWidth={2} />
-                      <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Company Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Company Activity</CardTitle>
-                <CardDescription>
-                  Your interactions with companies
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {companyEngagement.slice(0, 5).map((company, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Building2 className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{company.company}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {company.events} events attended
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{company.engagement}%</p>
-                        <Badge variant="outline" className="text-xs">
-                          Engagement
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      default:
-        return null;
-    }
+    return {
+      totalEvents,
+      upcomingEvents,
+      pastEvents,
+      rsvps: allRSVPs,
+      eventsByType,
+      topCompanies: Object.entries(topCompanies)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5),
+    };
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-        <p className="text-muted-foreground">
-          {user?.role === 'IR Admin' 
-            ? 'Track engagement metrics and event performance'
-            : 'Monitor your calendar activity and company interactions'
-          }
-        </p>
-      </div>
+  const analytics = getAnalyticsData();
 
-      {getAnalyticsContent()}
+  return (
+    <div className="min-h-screen bg-background">
+      <NavigationHeader 
+        currentUser={currentUser} 
+        currentScreen="analytics"
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
+      
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Analytics Dashboard</h1>
+          <p className="text-muted-foreground">
+            Comprehensive insights into event performance and engagement
+          </p>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.totalEvents}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.upcomingEvents} upcoming
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total RSVPs</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.rsvps.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {Math.round((analytics.rsvps.accepted / analytics.rsvps.total) * 100 || 0)}% acceptance rate
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Accepted RSVPs</CardTitle>
+              <CheckCircle className="h-4 w-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">{analytics.rsvps.accepted}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.rsvps.declined} declined, {analytics.rsvps.tentative} tentative
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {Math.round(((analytics.rsvps.accepted + analytics.rsvps.tentative) / analytics.rsvps.total) * 100 || 0)}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Positive response rate
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Event Types Distribution */}
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5" />
+                Events by Type
+              </CardTitle>
+              <CardDescription>Distribution of event categories</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(analytics.eventsByType).map(([type, count]) => {
+                  const percentage = Math.round((count / analytics.totalEvents) * 100);
+                  const colorClass = 
+                    type === 'earnings' ? 'bg-earnings' :
+                    type === 'roadshow' ? 'bg-roadshow' :
+                    type === 'conference' ? 'bg-conference' :
+                    'bg-meeting';
+                  
+                  return (
+                    <div key={type} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${colorClass}`} />
+                        <span className="text-sm font-medium capitalize">{type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{count} events</span>
+                        <Badge variant="outline">{percentage}%</Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* RSVP Breakdown */}
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                RSVP Breakdown
+              </CardTitle>
+              <CardDescription>Response distribution across all events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    <span className="text-sm font-medium">Accepted</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{analytics.rsvps.accepted}</span>
+                    <Badge variant="default" className="bg-success">
+                      {Math.round((analytics.rsvps.accepted / analytics.rsvps.total) * 100 || 0)}%
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-4 w-4 text-warning" />
+                    <span className="text-sm font-medium">Tentative</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{analytics.rsvps.tentative}</span>
+                    <Badge variant="secondary" className="bg-warning text-warning-foreground">
+                      {Math.round((analytics.rsvps.tentative / analytics.rsvps.total) * 100 || 0)}%
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="h-4 w-4 text-destructive" />
+                    <span className="text-sm font-medium">Declined</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{analytics.rsvps.declined}</span>
+                    <Badge variant="destructive">
+                      {Math.round((analytics.rsvps.declined / analytics.rsvps.total) * 100 || 0)}%
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Companies */}
+        <Card className="shadow-medium">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Most Active Companies
+            </CardTitle>
+            <CardDescription>Companies with the most scheduled events</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analytics.topCompanies.map(([company, count], index) => (
+                <div key={company} className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <span className="font-medium">{company}</span>
+                  </div>
+                  <Badge variant="outline">{count} events</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

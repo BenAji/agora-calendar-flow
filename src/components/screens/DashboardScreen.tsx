@@ -1,353 +1,223 @@
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useOffice } from '@/contexts/OfficeContext';
-import { UserRole } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { NavigationHeader } from '../common/NavigationHeader';
 import { 
   Calendar, 
   Users, 
   TrendingUp, 
-  Building2, 
+  FileText, 
   Clock, 
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  Activity
 } from 'lucide-react';
-import { getConflictSummary } from '@/utils/conflictDetection';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { CreateEventModal } from '@/components/modals/CreateEventModal';
-import { CSVImportModal } from '@/components/modals/CSVImportModal';
-import { OfficeStatus } from '@/components/common/OfficeStatus';
-import { GraphStatus } from '@/components/common/GraphStatus';
+import { User, Event, Screen } from '../AgoraCalendar';
 
-export const DashboardScreen: React.FC = () => {
-  const { user } = useAuth();
-  const { isOfficeAvailable, showNotification } = useOffice();
-  const navigate = useNavigate();
+interface DashboardScreenProps {
+  currentUser: User;
+  events: Event[];
+  onNavigate: (screen: Screen) => void;
+  onLogout: () => void;
+  onEventUpdate: (event: Event) => void;
+  onEventCreate: (event: Omit<Event, 'id'>) => void;
+  onEventDelete: (eventId: string) => void;
+}
+
+export const DashboardScreen: React.FC<DashboardScreenProps> = ({
+  currentUser,
+  events,
+  onNavigate,
+  onLogout,
+}) => {
   
+  const getUpcomingEvents = () => {
+    const today = new Date();
+    return events
+      .filter(event => new Date(event.date) >= today)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 5);
+  };
 
-  
-  // Mock events for conflict detection
-  const mockEvents = [
-    {
-      id: '1',
-      title: 'Q4 Earnings Call',
-      company: 'Apple Inc.',
-      type: 'earnings' as const,
-      date: '2024-01-15',
-      startTime: '10:00 AM',
-      endTime: '11:00 AM',
-      location: 'Virtual',
-      marketCap: 'Large Cap',
-      status: 'upcoming' as const,
-      rsvps: { 'analyst.manager@company.com': 'accepted' as const },
-      createdBy: 'ir.admin@company.com',
-      createdAt: '2024-01-10'
-    },
-    {
-      id: '2',
-      title: 'Analyst Meeting',
-      company: 'Microsoft Corp.',
-      type: 'meeting' as const,
-      date: '2024-01-15',
-      startTime: '10:30 AM',
-      endTime: '11:30 AM',
-      location: 'Seattle, WA',
-      marketCap: 'Large Cap',
-      status: 'upcoming' as const,
-      rsvps: { 'analyst.manager@company.com': 'accepted' as const },
-      createdBy: 'ir.admin@company.com',
-      createdAt: '2024-01-12'
-    }
-  ];
-
-  const conflictSummary = getConflictSummary(mockEvents);
-
-  const handleQuickAction = async (action: string) => {
-    if (isOfficeAvailable) {
-      await showNotification(`Executing ${action}...`, 'info');
-    }
+  const getRSVPStats = () => {
+    const totalRSVPs = events.reduce((acc, event) => {
+      return acc + Object.keys(event.rsvps).length;
+    }, 0);
     
-    switch (action) {
-      case 'create-event':
-        // This will be handled by the modal trigger
-        break;
-      case 'import-events':
-        // This will be handled by the modal trigger
-        break;
-      case 'view-analytics':
-        navigate('/analytics');
-        break;
+    const acceptedRSVPs = events.reduce((acc, event) => {
+      return acc + Object.values(event.rsvps).filter(rsvp => rsvp === 'accepted').length;
+    }, 0);
+
+    return { total: totalRSVPs, accepted: acceptedRSVPs };
+  };
+
+  const getQuickActions = () => {
+    switch (currentUser.role) {
+      case 'ir-admin':
+        return [
+          { label: 'Create Event', icon: Calendar, action: () => onNavigate('events'), variant: 'admin' },
+          { label: 'View Analytics', icon: TrendingUp, action: () => onNavigate('analytics'), variant: 'default' },
+          { label: 'Export RSVPs', icon: FileText, action: () => {}, variant: 'outline' }
+        ];
+      case 'analyst-manager':
+        return [
+          { label: 'View Calendar', icon: Calendar, action: () => onNavigate('calendar'), variant: 'manager' },
+          { label: 'Manage Events', icon: Users, action: () => onNavigate('events'), variant: 'default' },
+          { label: 'Team Analytics', icon: Activity, action: () => onNavigate('analytics'), variant: 'outline' }
+        ];
+      case 'investment-analyst':
+        return [
+          { label: 'My Calendar', icon: Calendar, action: () => onNavigate('calendar'), variant: 'analyst' },
+          { label: 'Assigned Events', icon: Clock, action: () => onNavigate('events'), variant: 'default' }
+        ];
       default:
-        console.log('Unknown action:', action);
+        return [];
     }
   };
 
-  const getDashboardContent = () => {
-    if (!user) {
-      return <div>No user found</div>;
-    }
-
-    switch (user.role) {
-      case 'IR Admin':
-        return (
-          <div className="space-y-6">
-            {/* Header */}
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {user.name}. Manage your investor relations events.
-              </p>
-            </div>
-
-            {/* Office Status */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                {/* Quick Actions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Quick Actions
-                    </CardTitle>
-                    <CardDescription>
-                      Common tasks for IR Administrators
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div 
-                        className="p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => handleQuickAction('create-event')}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <Calendar className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-sm">Create New Event</h3>
-                            <p className="text-xs text-muted-foreground">Schedule a new investor event</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div 
-                        className="p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => handleQuickAction('import-events')}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <Users className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-sm">Import Events</h3>
-                            <p className="text-xs text-muted-foreground">Bulk import from CSV</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div 
-                        className="p-4 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => handleQuickAction('view-analytics')}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <TrendingUp className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-sm">View Analytics</h3>
-                            <p className="text-xs text-muted-foreground">Event performance metrics</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-500/10 rounded-lg">
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">24</p>
-                          <p className="text-sm text-muted-foreground">Total Events</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                          <Users className="h-5 w-5 text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">156</p>
-                          <p className="text-sm text-muted-foreground">Total RSVPs</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-yellow-500/10 rounded-lg">
-                          <AlertCircle className="h-5 w-5 text-yellow-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">3</p>
-                          <p className="text-sm text-muted-foreground">Conflicts</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Office Status Sidebar */}
-              <div className="space-y-6">
-                <OfficeStatus />
-                <GraphStatus />
-                
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>Event "Q4 Earnings Call" created</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>5 RSVPs received for "Analyst Meeting"</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <span>Conflict detected for "Roadshow Presentation"</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'Analyst Manager':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {user.name}. Manage your analyst team and events.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5" />
-                      Team Overview
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 border border-border rounded-lg">
-                        <p className="text-2xl font-bold">8</p>
-                        <p className="text-sm text-muted-foreground">Analysts</p>
-                      </div>
-                      <div className="text-center p-4 border border-border rounded-lg">
-                        <p className="text-2xl font-bold">12</p>
-                        <p className="text-sm text-muted-foreground">Assigned Events</p>
-                      </div>
-                      <div className="text-center p-4 border border-border rounded-lg">
-                        <p className="text-2xl font-bold">85%</p>
-                        <p className="text-sm text-muted-foreground">Response Rate</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <OfficeStatus />
-                <GraphStatus />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'Investment Analyst':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {user.name}. View your assigned events and RSVPs.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5" />
-                      My Events
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                        <div>
-                          <p className="font-medium">Q4 Earnings Call</p>
-                          <p className="text-sm text-muted-foreground">Apple Inc. • Jan 15, 2025</p>
-                        </div>
-                        <Badge className="bg-green-500">Accepted</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                        <div>
-                          <p className="font-medium">Analyst Meeting</p>
-                          <p className="text-sm text-muted-foreground">Microsoft Corp. • Jan 18, 2025</p>
-                        </div>
-                        <Badge variant="outline">Pending</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <OfficeStatus />
-                <GraphStatus />
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return <div>Unknown role</div>;
-    }
-  };
+  const upcomingEvents = getUpcomingEvents();
+  const rsvpStats = getRSVPStats();
+  const quickActions = getQuickActions();
 
   return (
-    <div className="container mx-auto px-6 py-6">
-      {getDashboardContent()}
+    <div className="min-h-screen bg-background">
+      <NavigationHeader 
+        currentUser={currentUser} 
+        currentScreen="dashboard"
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
       
-      {/* Modals */}
-      <CreateEventModal onSave={(event) => console.log('Event created:', event)} />
-      <CSVImportModal onImport={(events) => console.log('Events imported:', events)} />
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Welcome Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Welcome back, {currentUser.name}
+            </h1>
+            <p className="text-muted-foreground">
+              {currentUser.role === 'ir-admin' && 'Manage your investor relations events and communications'}
+              {currentUser.role === 'analyst-manager' && 'Coordinate your team and track investment opportunities'}
+              {currentUser.role === 'investment-analyst' && 'Stay on top of your assigned events and research'}
+            </p>
+          </div>
+          <Badge variant="outline" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            {currentUser.company}
+          </Badge>
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Frequently used features for your role</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {quickActions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant={action.variant as any}
+                  onClick={action.action}
+                  className="h-auto p-4 flex flex-col items-center gap-2"
+                >
+                  <action.icon className="h-6 w-6" />
+                  <span>{action.label}</span>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{events.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {upcomingEvents.length} upcoming
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">RSVP Responses</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{rsvpStats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {rsvpStats.accepted} accepted
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">This Week</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {events.filter(e => {
+                  const eventDate = new Date(e.date);
+                  const today = new Date();
+                  const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                  return eventDate >= today && eventDate <= weekFromNow;
+                }).length}
+              </div>
+              <p className="text-xs text-muted-foreground">events scheduled</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Upcoming Events */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle>Upcoming Events</CardTitle>
+            <CardDescription>Your next scheduled events</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {upcomingEvents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No upcoming events scheduled</p>
+                </div>
+              ) : (
+                upcomingEvents.map((event) => (
+                  <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/20">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-3 h-3 rounded-full ${
+                        event.type === 'earnings' ? 'bg-earnings' :
+                        event.type === 'meeting' ? 'bg-meeting' :
+                        event.type === 'conference' ? 'bg-conference' :
+                        'bg-roadshow'
+                      }`} />
+                      <div>
+                        <div className="font-medium text-foreground">{event.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {event.company} • {event.date} at {event.startTime}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline">{event.type}</Badge>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

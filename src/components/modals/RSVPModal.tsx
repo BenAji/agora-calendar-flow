@@ -1,236 +1,166 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Calendar, Clock, MapPin, Building2, Users, CheckCircle, XCircle, Clock as ClockIcon } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Event } from '@/components/screens/EventManagementScreen';
-import { format } from 'date-fns';
+import { 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  Building2,
+  CheckCircle,
+  XCircle,
+  AlertCircle
+} from 'lucide-react';
+import { User, Event } from '../AgoraCalendar';
 
 interface RSVPModalProps {
   event: Event;
+  currentUser: User;
+  onClose: () => void;
   onRSVP: (eventId: string, response: 'accepted' | 'declined' | 'tentative') => void;
-  onAssign?: (eventId: string, analystEmail: string) => void;
-  trigger?: React.ReactNode;
 }
 
-// Mock analysts for assignment (in real app, this would come from API)
-const mockAnalysts = [
-  { email: 'analyst1@company.com', name: 'John Smith', role: 'Investment Analyst' },
-  { email: 'analyst2@company.com', name: 'Sarah Johnson', role: 'Investment Analyst' },
-  { email: 'analyst3@company.com', name: 'Mike Davis', role: 'Investment Analyst' },
-  { email: 'analyst4@company.com', name: 'Lisa Wilson', role: 'Investment Analyst' }
-];
-
-export const RSVPModal: React.FC<RSVPModalProps> = ({ 
-  event, 
-  onRSVP, 
-  onAssign, 
-  trigger 
+export const RSVPModal: React.FC<RSVPModalProps> = ({
+  event,
+  currentUser,
+  onClose,
+  onRSVP,
 }) => {
-  const { user } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [selectedAnalyst, setSelectedAnalyst] = useState<string>('');
-  const [userResponse, setUserResponse] = useState<'accepted' | 'declined' | 'tentative' | null>(null);
-
-  const currentUserRSVP = event.rsvps[user?.email || ''];
+  const currentRSVP = event.rsvps[currentUser.id];
 
   const handleRSVP = (response: 'accepted' | 'declined' | 'tentative') => {
-    if (user?.email) {
-      onRSVP(event.id, response);
-      setUserResponse(response);
-    }
+    onRSVP(event.id, response);
   };
 
-  const handleAssign = () => {
-    if (selectedAnalyst && onAssign) {
-      onAssign(event.id, selectedAnalyst);
-      setSelectedAnalyst('');
-    }
-  };
-
-  const getResponseColor = (response: string) => {
-    switch (response) {
-      case 'accepted': return 'bg-success text-success-foreground';
-      case 'declined': return 'bg-destructive text-destructive-foreground';
-      case 'tentative': return 'bg-warning text-warning-foreground';
-      default: return 'bg-secondary text-secondary-foreground';
-    }
-  };
-
-  const getResponseIcon = (response: string) => {
-    switch (response) {
-      case 'accepted': return <CheckCircle className="h-4 w-4" />;
-      case 'declined': return <XCircle className="h-4 w-4" />;
-      case 'tentative': return <ClockIcon className="h-4 w-4" />;
-      default: return null;
+  const getEventTypeColor = (type: string) => {
+    switch (type) {
+      case 'earnings': return 'bg-earnings';
+      case 'roadshow': return 'bg-roadshow';
+      case 'conference': return 'bg-conference';
+      case 'meeting': return 'bg-meeting';
+      default: return 'bg-muted';
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button size="sm">
-            RSVP
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
-            <span>Event RSVP</span>
+          <DialogTitle className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${getEventTypeColor(event.type)}`} />
+            {event.title}
           </DialogTitle>
           <DialogDescription>
-            Respond to this event invitation or assign it to analysts
+            Respond to this event invitation
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Event Details */}
           <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-lg">{event.title}</h3>
-              <p className="text-muted-foreground">{event.company}</p>
+            <div className="p-4 rounded-lg bg-muted/20 border border-border">
+              <p className="text-foreground mb-3">{event.description}</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>{new Date(event.date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>{event.startTime} - {event.endTime}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{event.location}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="h-4 w-4" />
+                  <span>{event.company}</span>
+                </div>
+              </div>
+              
+              <div className="mt-3 flex items-center gap-2">
+                <Badge variant="outline" className="capitalize">{event.type}</Badge>
+                <Badge variant="secondary">{event.purpose}</Badge>
+              </div>
             </div>
-            
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{format(new Date(event.date), 'EEEE, MMMM d, yyyy')}</span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{event.startTime} - {event.endTime}</span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{event.location}</span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{event.marketCap}</span>
-              </div>
-            </div>
-            
-            {event.description && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">{event.description}</p>
-              </div>
-            )}
           </div>
 
-          {/* Current RSVPs */}
+          {/* Current RSVP Status */}
+          {currentRSVP && (
+            <div className="p-4 rounded-lg border bg-card">
+              <div className="flex items-center gap-2 mb-2">
+                {currentRSVP === 'accepted' && <CheckCircle className="h-5 w-5 text-success" />}
+                {currentRSVP === 'declined' && <XCircle className="h-5 w-5 text-destructive" />}
+                {currentRSVP === 'tentative' && <AlertCircle className="h-5 w-5 text-warning" />}
+                <span className="font-medium">
+                  Current Response: <span className="capitalize">{currentRSVP}</span>
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You can change your response at any time before the event.
+              </p>
+            </div>
+          )}
+
+          {/* RSVP Actions */}
           <div className="space-y-3">
-            <h4 className="font-medium flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>Current RSVPs ({Object.keys(event.rsvps).length})</span>
+            <h4 className="font-medium text-foreground">
+              {currentRSVP ? 'Update your response:' : 'Please respond to this invitation:'}
             </h4>
             
-            {Object.keys(event.rsvps).length > 0 ? (
-              <div className="space-y-2">
-                {Object.entries(event.rsvps).map(([email, response]) => (
-                  <div key={email} className="flex items-center justify-between p-2 border rounded">
-                    <span className="text-sm">{email}</span>
-                    <Badge className={getResponseColor(response)}>
-                      <div className="flex items-center space-x-1">
-                        {getResponseIcon(response)}
-                        <span>{response}</span>
-                      </div>
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No RSVPs yet</p>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                variant={currentRSVP === 'accepted' ? 'success' : 'outline'}
+                onClick={() => handleRSVP('accepted')}
+                className="justify-start"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Accept
+              </Button>
+              
+              <Button
+                variant={currentRSVP === 'tentative' ? 'warning' : 'outline'}
+                onClick={() => handleRSVP('tentative')}
+                className="justify-start"
+              >
+                <AlertCircle className="h-4 w-4" />
+                Tentative
+              </Button>
+              
+              <Button
+                variant={currentRSVP === 'declined' ? 'destructive' : 'outline'}
+                onClick={() => handleRSVP('declined')}
+                className="justify-start"
+              >
+                <XCircle className="h-4 w-4" />
+                Decline
+              </Button>
+            </div>
           </div>
 
-          {/* User RSVP Section */}
-          {user && (
-            <div className="space-y-3">
-              <h4 className="font-medium">Your Response</h4>
-              
-              {currentUserRSVP ? (
-                <div className="flex items-center justify-between p-3 border rounded">
-                  <span className="text-sm">Your RSVP:</span>
-                  <Badge className={getResponseColor(currentUserRSVP)}>
-                    <div className="flex items-center space-x-1">
-                      {getResponseIcon(currentUserRSVP)}
-                      <span>{currentUserRSVP}</span>
-                    </div>
-                  </Badge>
-                </div>
-              ) : (
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={() => handleRSVP('accepted')}
-                    className="flex-1"
-                    variant="outline"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Accept
-                  </Button>
-                  <Button 
-                    onClick={() => handleRSVP('tentative')}
-                    className="flex-1"
-                    variant="outline"
-                  >
-                    <ClockIcon className="h-4 w-4 mr-2" />
-                    Tentative
-                  </Button>
-                  <Button 
-                    onClick={() => handleRSVP('declined')}
-                    className="flex-1"
-                    variant="outline"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Decline
-                  </Button>
-                </div>
-              )}
+          {/* Additional Actions for Analyst Manager */}
+          {currentUser.role === 'analyst-manager' && (
+            <div className="pt-4 border-t border-border">
+              <h4 className="font-medium text-foreground mb-3">Team Management</h4>
+              <Button variant="manager" className="w-full">
+                Assign to Team Members
+              </Button>
             </div>
           )}
 
-          {/* Analyst Assignment (Analyst Managers Only) */}
-          {user?.role === 'Analyst Manager' && onAssign && (
-            <div className="space-y-3">
-              <h4 className="font-medium">Assign to Analyst</h4>
-              
-              <div className="flex space-x-2">
-                <Select value={selectedAnalyst} onValueChange={setSelectedAnalyst}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select analyst..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockAnalysts.map(analyst => (
-                      <SelectItem key={analyst.email} value={analyst.email}>
-                        {analyst.name} ({analyst.role})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button 
-                  onClick={handleAssign}
-                  disabled={!selectedAnalyst}
-                  size="sm"
-                >
-                  Assign
-                </Button>
-              </div>
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="text-sm text-muted-foreground">
+              Event created by {event.company} IR Team
             </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="ghost" onClick={onClose}>
               Close
             </Button>
           </div>

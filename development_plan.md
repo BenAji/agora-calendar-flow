@@ -7,7 +7,7 @@ All developers and AI coding agents (including Cursor AI) **must follow this pla
 
 ## 💡 Purpose:
 AgoraCalendar is a Microsoft Outlook Add-in for **Investor Relations (IR) Teams** and **Investors** (Analyst Managers & Investment Analysts).  
-It provides advanced calendar views, event workflows, RSVP management, and analytics, based on our approved high-fidelity desktop mockup (Bloomberg dark theme).
+It provides advanced calendar views, event workflows, RSVP management, and analytics, based on our approved high-fidelity desktop mockup (Bloomberg dark theme). THe plan below is to build a MVP. This is not a mockup. ALl features must be built for production and tested with sample test and stress test where suitable.
 
 ---
 
@@ -36,9 +36,8 @@ It provides advanced calendar views, event workflows, RSVP management, and analy
 ---
 
 ### 2. Navigation & Layout (Based on Approved Mockup)
-**Sidebar Menus:**
-- Analyst Managers & Investment Analysts: Dashboard, Calendar, Events, Analytics, Settings (You may generate feature ideas for Settings).
-- IR Admins: Dashboard, Events, Analytics, Settings (Settings may be generated).
+- Analyst Managers & Investment Analysts: Dashboard, Calendar, Events, Analytics.
+- IR Admins: Dashboard, Events, Analytics.
 - Show logged-in user info in the top navbar.
 - No Calendar for IR Admin.
 - Must follow Bloomberg dark theme.

@@ -1,237 +1,73 @@
-# AgoraCalendar - Microsoft Outlook Add-in
+# Welcome to your AW (AjayWilliams) project
 
-**Developed by AjayiWilliams LLC**
+## Project info
 
-A comprehensive Microsoft Outlook Add-in designed for Investor Relations teams and investment analysts. AgoraCalendar provides advanced calendar management, event scheduling, conflict detection, and analytics capabilities within the Microsoft Office ecosystem.
+**URL**: https://ajaywilliams.dev/projects/0101b582-f360-4aee-9943-6cc7c3a80f70
 
-## 🚀 Features
+## How can I edit this code?
 
-### **Role-Based Access Control**
-- **IR Admin**: Full event management for single company
-- **Analyst Manager**: Team oversight and multi-company event management
-- **Investment Analyst**: Event viewing and RSVP management
+There are several ways of editing your application.
 
-### **Core Functionality**
-- **📅 Advanced Calendar View**: Resource-based calendar with company rows and time columns
-- **🎯 Event Management**: Create, edit, and manage investor events
-- **📊 Analytics Dashboard**: Real-time event performance metrics
-- **⚠️ Conflict Detection**: Intelligent scheduling conflict identification
-- **📈 RSVP Tracking**: Comprehensive response management
-- **📁 CSV Import/Export**: Bulk event data processing
-- **🔍 Advanced Filtering**: Multi-criteria event search and filtering
+**Use AW Platform**
 
-### **Microsoft Integration**
-- **Office.js Integration**: Native Outlook Add-in functionality
-- **MSAL Authentication**: Secure Azure AD authentication
-- **Microsoft Graph API**: Real-time calendar and user data sync
-- **Bloomberg Dark Theme**: Professional financial industry styling
+Simply visit the [AW Project](https://ajaywilliams.dev/projects/0101b582-f360-4aee-9943-6cc7c3a80f70) and start prompting.
 
-## 🛠️ Technology Stack
+Changes made via AW Platform will be committed automatically to this repo.
 
-- **Frontend**: React 18 + TypeScript
-- **Styling**: TailwindCSS + shadcn/ui
-- **Authentication**: MSAL (Microsoft Authentication Library)
-- **API Integration**: Microsoft Graph API
-- **Data Processing**: PapaParse for CSV handling
-- **Charts**: Recharts for analytics visualization
-- **Build Tool**: Vite
-- **Package Manager**: npm/bun
+**Use your preferred IDE**
 
-## 📋 Prerequisites
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in AW Platform.
 
-- Node.js 18+ 
-- npm or bun
-- Microsoft 365 Developer Account
-- Azure AD Application Registration
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-## 🚀 Quick Start
+Follow these steps:
 
-### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd agora-calendar-flow
-```
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-### 2. Install Dependencies
-```bash
-npm install
-# or
-bun install
-```
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-### 3. Environment Configuration
-Create a `.env` file in the root directory:
+# Step 3: Install the necessary dependencies.
+npm i
 
-```env
-# Microsoft Authentication
-VITE_MSAL_CLIENT_ID=your-azure-ad-client-id
-VITE_MSAL_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
-VITE_MSAL_REDIRECT_URI=http://localhost:3000
-VITE_MSAL_POST_LOGOUT_REDIRECT_URI=http://localhost:3000
-
-# Office.js Configuration
-VITE_OFFICE_CLIENT_ID=your-office-add-in-client-id
-VITE_OFFICE_REDIRECT_URI=http://localhost:3000
-```
-
-### 4. Start Development Server
-```bash
-npm run dev
-# or
-bun dev
-```
-
-The application will be available at `http://localhost:3000`
-
-## 🏗️ Project Structure
-
-```
-agora-calendar-flow/
-├── src/
-│   ├── components/
-│   │   ├── common/          # Shared components
-│   │   ├── modals/          # Modal dialogs
-│   │   ├── screens/         # Main application screens
-│   │   └── ui/              # shadcn/ui components
-│   ├── contexts/            # React contexts
-│   ├── services/            # API and external services
-│   ├── utils/               # Utility functions
-│   └── hooks/               # Custom React hooks
-├── public/                  # Static assets
-└── docs/                    # Documentation
-```
-
-## 🔧 Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-
-# Code Quality
-npm run lint         # Run ESLint
-npm run type-check   # TypeScript type checking
-```
-
-### Key Components
-
-- **`AgoraCalendar.tsx`**: Main calendar component with resource view
-- **`EventManagementScreen.tsx`**: Event CRUD operations
-- **`AnalyticsScreen.tsx`**: Performance metrics and charts
-- **`DashboardScreen.tsx`**: Role-based dashboard views
-
-### Authentication Flow
-
-1. **MSAL Integration**: Secure Azure AD authentication
-2. **Role Assignment**: Automatic role detection from Azure AD
-3. **Graph API Access**: Calendar and user data synchronization
-4. **Office.js Integration**: Native Outlook Add-in functionality
-
-## 📊 Features in Detail
-
-### **Calendar Management**
-- Resource-based calendar view (companies as rows, days as columns)
-- Drag-and-drop event scheduling
-- Real-time conflict detection
-- Multi-calendar support
-
-### **Event Management**
-- Create, edit, and delete events
-- Bulk CSV import/export
-- RSVP tracking and management
-- Event categorization (earnings, meetings, conferences, roadshows)
-
-### **Analytics Dashboard**
-- Event performance metrics
-- RSVP response rates
-- Conflict analysis
-- Company-specific insights
-
-### **User Management**
-- Role-based access control
-- Company-specific data isolation
-- User profile management
-- Team collaboration features
-
-## 🔒 Security
-
-- **Azure AD Integration**: Enterprise-grade authentication
-- **Role-Based Access**: Granular permissions per user role
-- **Data Isolation**: Company-specific data segregation
-- **Secure API Calls**: Token-based Microsoft Graph API access
-
-## 🚀 Deployment
-
-### **Development**
-```bash
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-### **Production Build**
-```bash
-npm run build
-npm run preview
-```
+**Edit a file directly in GitHub**
 
-### **Outlook Add-in Deployment**
-1. Build the application
-2. Configure manifest.xml for Office Add-in
-3. Deploy to web server
-4. Register with Microsoft 365 Admin Center
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## 📈 Roadmap
+**Use GitHub Codespaces**
 
-### **Phase 1** ✅
-- [x] Core calendar functionality
-- [x] Role-based authentication
-- [x] Event management
-- [x] Basic analytics
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-### **Phase 2** 🚧
-- [ ] Advanced conflict detection
-- [ ] Real-time notifications
-- [ ] Mobile responsiveness
-- [ ] Advanced reporting
+## What technologies are used for this project?
 
-### **Phase 3** 📋
-- [ ] AI-powered scheduling suggestions
-- [ ] Integration with Bloomberg Terminal
-- [ ] Advanced analytics and ML insights
-- [ ] Multi-language support
+This project is built with:
 
-## 🤝 Contributing
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-### **Development Guidelines**
-1. Follow TypeScript best practices
-2. Use shadcn/ui components for consistency
-3. Implement proper error handling
-4. Write comprehensive tests
-5. Follow the established code style
+## How can I deploy this project?
 
-### **Code Style**
-- Use TypeScript for type safety
-- Follow React functional component patterns
-- Implement proper error boundaries
-- Use React hooks for state management
+Simply open [AW Platform](https://ajaywilliams.dev/projects/0101b582-f360-4aee-9943-6cc7c3a80f70) and click on Share -> Publish.
 
-## 📞 Support
+## Can I connect a custom domain to my AW project?
 
-For technical support or feature requests, please contact:
+Yes, you can!
 
-**AjayiWilliams LLC**
-- Email: support@ajayiwilliams.com
-- Website: https://ajayiwilliams.com
-- GitHub: [Repository Issues](https://github.com/ajayiwilliams/agora-calendar-flow/issues)
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-## 📄 License
-
-Copyright © 2024 AjayiWilliams LLC. All rights reserved.
-
-This project is proprietary software developed by AjayiWilliams LLC for enterprise use.
-
----
-
-**Built with ❤️ by AjayiWilliams LLC** 
+Read more here: [Setting up a custom domain](https://docs.ajaywilliams.dev/tips-tricks/custom-domain#step-by-step-guide)
